@@ -5,71 +5,78 @@
 #include <vector>
 #include <algorithm>
 
+/* Copyright 2017, Markus Leitz. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms are permitted, with or without modification.
+ */
+
+typedef std::vector<uint8_t> ByteSequence;
 
 namespace cobs
 {
-typedef std::vector<uint8_t> ByteSequence;
- 
- 
-	int cobs_encode(const ByteSequence &input, ByteSequence &output)
-	{
-		if(input.size() > std::numeric_limits<uint8_t>::max()  -1 )
-		{
-			return -1;
-		}
-		output.resize(input.size()+1);
-	
-		std::fill(output.begin(),
-			      output.end(),
-				  uint8_t(0));
-		
-		std::copy(input.begin(),
-			      input.end(),
-				  output.begin()+1);
-			
-	 
-		auto next_zero_element =  output.begin();  
-        auto previous_zero_element = next_zero_element;
 
-		while(next_zero_element != output.end() )
-		{
-					
-			next_zero_element = std::find(std::next(next_zero_element),output.end(),uint8_t(0));
 
-			*previous_zero_element = std::distance(previous_zero_element,next_zero_element);
 
-			 previous_zero_element = next_zero_element;
+int cobs_encode(const ByteSequence &input, ByteSequence &output)
+{
 
-		}
+    output.resize(input.size()+1);  // the encoded buffer is one element larger
 
-		
-		return(0);
-	}
-	 
-	int cobs_decode(const ByteSequence &input,ByteSequence &output)
-	{
-		
-		output.resize(input.size()-1);
-	    ByteSequence tmp = ByteSequence(input);
-		
-		
-	   auto next_zero_element = tmp.begin();  
-	   auto previous_zero_element = next_zero_element;
+    std::fill(output.begin(),       // set all elements of the output to zero, that ensures that first element is zero too 
+              output.end(),
+              uint8_t(0));
 
-	   while(next_zero_element != tmp.end())
-		  {
+    std::copy(input.begin(),        // copy input to output  with offset of one element
+              input.end(),
+              output.begin()+1);
 
-			next_zero_element += (*previous_zero_element);
-			*previous_zero_element = uint8_t(0);
-			previous_zero_element = next_zero_element;
 
-		  }
+    auto next_zero_element =  output.begin();   // the first element contains zero , so point to it
+    auto previous_zero_element = next_zero_element;  // on start , next and previous are identical
 
-	std::copy(tmp.begin()+1,tmp.end(),output.begin());
-		
-     return(0);
-	}
+    while(next_zero_element != output.end() )
+    {
+
+        next_zero_element = std::find(std::next(next_zero_element),output.end(),uint8_t(0));   
+
+        *previous_zero_element = std::distance(previous_zero_element,next_zero_element);
+
+        previous_zero_element = next_zero_element;
+
+    }
+
+
+    return(0);
 }
+
+int cobs_decode(const ByteSequence &input,ByteSequence &output)
+{
+
+    output.resize(input.size()-1);
+    ByteSequence tmp = ByteSequence(input);
+
+
+    auto next_zero_element = tmp.begin();
+    auto previous_zero_element = next_zero_element;
+
+    while(next_zero_element != tmp.end())
+    {
+
+        next_zero_element += (*previous_zero_element);
+        *previous_zero_element = uint8_t(0);
+        previous_zero_element = next_zero_element;
+
+    }
+
+    std::copy(tmp.begin()+1,tmp.end(),output.begin());
+
+    return(0);
+}
+} // end namespace
+
+
+
+
 
 /* Copyright 2011, Jacques Fortier. All rights reserved.
  *
@@ -103,6 +110,7 @@ size_t cobs_encode(const uint8_t *  input, size_t length, uint8_t *  output)
         {
             output[write_index++] = input[read_index++];
             code++;
+
             if(code == 0xFF)
             {
                 output[code_index] = code;
@@ -116,6 +124,11 @@ size_t cobs_encode(const uint8_t *  input, size_t length, uint8_t *  output)
 
     return write_index;
 }
+
+/* Copyright 2011, Jacques Fortier. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms are permitted, with or without modification.
+ */
 
 /* Unstuffs "length" bytes of data at the location pointed to by
  * "input", writing the output * to the location pointed to by
@@ -131,7 +144,7 @@ size_t cobs_decode(const uint8_t *  input, size_t length, uint8_t *  output)
     size_t read_index = 0;
     size_t write_index = 0;
     uint8_t code;
-   
+
 
     while(read_index < length)
     {
@@ -148,6 +161,7 @@ size_t cobs_decode(const uint8_t *  input, size_t length, uint8_t *  output)
         {
             output[write_index++] = input[read_index++];
         }
+
         if(code != 0xFF && read_index != length)
         {
             output[write_index++] = '\0';
@@ -158,5 +172,5 @@ size_t cobs_decode(const uint8_t *  input, size_t length, uint8_t *  output)
 }
 
 
- 
+
 

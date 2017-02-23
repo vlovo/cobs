@@ -18,4 +18,4 @@ SET(HDRS
 	 	cobs.h)
 	
 
-add_executable(${cobsName} ${SRCS})
+add_executable(${cobsName} main.cpp ${SRCS})
