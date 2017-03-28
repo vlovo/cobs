@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <iterator>
 
 /* Copyright 2017, Markus Leitz. All rights reserved.
  *
@@ -12,66 +13,82 @@
 
 typedef std::vector<uint8_t> ByteSequence;
 
+
 namespace cobs
 {
 
 
 
-int cobs_encode(const ByteSequence &input, ByteSequence &output)
+ByteSequence cobs_encode(const ByteSequence &input)
 {
+  ByteSequence output;
+  auto next_zero_byte = input.begin();
+  auto previous_zero_byte = input.begin();
 
-    output.resize(input.size()+1);  // the encoded buffer is one element larger
+  while(next_zero_byte != input.end() )
+  {
 
-    std::fill(output.begin(),       // set all elements of the output to zero, that ensures that first element is zero too 
-              output.end(),
-              uint8_t(0));
+    next_zero_byte = std::find(next_zero_byte,
+                               input.end(),
+                               uint8_t(0));
 
-    std::copy(input.begin(),        // copy input to output  with offset of one element
-              input.end(),
-              output.begin()+1);
+    auto dist = std::distance(previous_zero_byte,next_zero_byte);
 
+    dist = dist < 254 ? dist: 254;
 
-    auto next_zero_element =  output.begin();   // the first element contains zero , so point to it
-    auto previous_zero_element = next_zero_element;  // on start , next and previous are identical
+    if(dist == 254)	next_zero_byte = previous_zero_byte + 254; // clip to  max distance
 
-    while(next_zero_element != output.end() )
+    output.push_back(dist+1);  // add code byte to output
+
+    output.insert(output.end(), previous_zero_byte, next_zero_byte);  //insert block of bytes between to code bytes , e.g two zeros
+
+    if(   dist != 254
+          && next_zero_byte != input.end() )
     {
-
-        next_zero_element = std::find(std::next(next_zero_element),output.end(),uint8_t(0));   
-
-        *previous_zero_element = std::distance(previous_zero_element,next_zero_element);
-
-        previous_zero_element = next_zero_element;
-
+      std:: advance(next_zero_byte,1);//next_zero_byte++;   // if we found a zero we move iterator to prepare for next std::find
     }
 
+    previous_zero_byte = next_zero_byte;
+  }
 
-    return(0);
+  if(input[input.size()-1] == uint8_t(0)) output.push_back(uint8_t(1)); // last element is zero , add 1 to output
+
+
+  return(output);
 }
 
-int cobs_decode(const ByteSequence &input,ByteSequence &output)
+
+ByteSequence cobs_decode(const ByteSequence &input )
 {
+  ByteSequence output;
 
-    output.resize(input.size()-1);
-    ByteSequence tmp = ByteSequence(input);
+  auto next_code_byte = input.begin();
+  auto previous_code_byte = input.begin();
 
+  while(next_code_byte != input.end() )
+  {
+    uint8_t dist = *next_code_byte >= 0xFF ? 0xFF : *next_code_byte;
 
-    auto next_zero_element = tmp.begin();
-    auto previous_zero_element = next_zero_element;
+    std::advance(next_code_byte,*next_code_byte);
 
-    while(next_zero_element != tmp.end())
+    output.insert(output.end(),previous_code_byte+1,next_code_byte);
+
+    if(    *previous_code_byte != 0xFF
+           && next_code_byte != input.end())
     {
-
-        next_zero_element += (*previous_zero_element);
-        *previous_zero_element = uint8_t(0);
-        previous_zero_element = next_zero_element;
-
+      output.push_back(0); //restore zero byte only in case if code byte was not 0xFF
     }
 
-    std::copy(tmp.begin()+1,tmp.end(),output.begin());
+    previous_code_byte = next_code_byte;
 
-    return(0);
+
+
+  }
+
+  return(output);
 }
+
+
 } // end namespace
 
 
@@ -92,37 +109,37 @@ int cobs_decode(const ByteSequence &input,ByteSequence &output)
  */
 size_t cobs_encode(const uint8_t *  input, size_t length, uint8_t *  output)
 {
-    size_t read_index = 0;
-    size_t write_index = 1;
-    size_t code_index = 0;
-    uint8_t code = 1;
+  size_t read_index = 0;
+  size_t write_index = 1;
+  size_t code_index = 0;
+  uint8_t code = 1;
 
-    while(read_index < length)
+  while(read_index < length)
+  {
+    if(input[read_index] == 0)
     {
-        if(input[read_index] == 0)
-        {
-            output[code_index] = code;
-            code = 1;
-            code_index = write_index++;
-            read_index++;
-        }
-        else
-        {
-            output[write_index++] = input[read_index++];
-            code++;
-
-            if(code == 0xFF)
-            {
-                output[code_index] = code;
-                code = 1;
-                code_index = write_index++;
-            }
-        }
+      output[code_index] = code;
+      code = 1;
+      code_index = write_index++;
+      read_index++;
     }
+    else
+    {
+      output[write_index++] = input[read_index++];
+      code++;
 
-    output[code_index] = code;
+      if(code == 0xFF)
+      {
+        output[code_index] = code;
+        code = 1;
+        code_index = write_index++;
+      }
+    }
+  }
 
-    return write_index;
+  output[code_index] = code;
+
+  return write_index;
 }
 
 /* Copyright 2011, Jacques Fortier. All rights reserved.
@@ -141,34 +158,34 @@ size_t cobs_encode(const uint8_t *  input, size_t length, uint8_t *  output)
  */
 size_t cobs_decode(const uint8_t *  input, size_t length, uint8_t *  output)
 {
-    size_t read_index = 0;
-    size_t write_index = 0;
-    uint8_t code;
+  size_t read_index = 0;
+  size_t write_index = 0;
+  uint8_t code;
 
 
-    while(read_index < length)
+  while(read_index < length)
+  {
+    code = input[read_index];
+
+    if(read_index + code > length && code != 1)
     {
-        code = input[read_index];
-
-        if(read_index + code > length && code != 1)
-        {
-            return 0;
-        }
-
-        read_index++;
-
-        for(uint8_t i = 1; i < code; i++)
-        {
-            output[write_index++] = input[read_index++];
-        }
-
-        if(code != 0xFF && read_index != length)
-        {
-            output[write_index++] = '\0';
-        }
+      return 0;
     }
 
-    return write_index;
+    read_index++;
+
+    for(uint8_t i = 1; i < code; i++)
+    {
+      output[write_index++] = input[read_index++];
+    }
+
+    if(code != 0xFF && read_index != length)
+    {
+      output[write_index++] = '\0';
+    }
+  }
+
+  return write_index;
 }
 
 
