@@ -34,9 +34,10 @@ ByteSequence cobs_encode(const ByteSequence &input)
 
     auto dist = std::distance(previous_zero_byte,next_zero_byte);
 
+	// clip to  max distance
     dist = dist < 254 ? dist: 254;
 
-    if(dist == 254)	next_zero_byte = previous_zero_byte + 254; // clip to  max distance
+    if(dist == 254)	next_zero_byte = previous_zero_byte + 254; 
 
     output.push_back(dist+1);  // add code byte to output
 
@@ -67,8 +68,7 @@ ByteSequence cobs_decode(const ByteSequence &input )
 
   while(next_code_byte != input.end() )
   {
-    uint8_t dist = *next_code_byte >= 0xFF ? 0xFF : *next_code_byte;
-
+   
     std::advance(next_code_byte,*next_code_byte);
 
     output.insert(output.end(),previous_code_byte+1,next_code_byte);

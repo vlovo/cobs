@@ -13,10 +13,7 @@ int main(int argc, char *argv[])
   int rc= 0;
 
   benchmark_01();
-
-  return 0;
-
-
+    
   return(rc);
 
 }
