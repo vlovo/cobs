@@ -11,12 +11,12 @@
  * Redistribution and use in source and binary forms are permitted, with or without modification.
  */
 
-typedef std::vector<uint8_t> ByteSequence;
+
 
 
 namespace cobs
 {
-
+	typedef std::vector<uint8_t> ByteSequence;
 
 
 ByteSequence cobs_encode(const ByteSequence &input)
