@@ -3,4 +3,5 @@ compiler: gcc
 
 script: 
   - g++ main.cpp -std=c++0x -o cobs
+  - cppcheck --quiet --error-exitcode=1 .
   - ./cobs
