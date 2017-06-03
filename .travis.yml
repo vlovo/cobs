@@ -1,7 +1,12 @@
 language: cpp
-compiler: gcc
+ 
+compiler:  
+    - gcc
+    - clang
 
-script: 
-  - g++ main.cpp -std=c++0x -o cobs
-  - cppcheck --quiet --error-exitcode=1 .
-  - ./cobs
+before_script:  
+    - mkdir build
+    - cd build
+    - cmake ..
+
+script: make  

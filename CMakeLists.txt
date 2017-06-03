@@ -9,9 +9,12 @@ SET( ProjectName
 
 project(${ProjectName})
 
-find_package(BOOST)
-include_directories (${Boost_INCLUDE_DIR}) 
-link_directories(${Boost_LIBRARY_DIRS})
+#find_package(BOOST)
+#include_directories (${Boost_INCLUDE_DIR}) 
+#link_directories(${Boost_LIBRARY_DIRS})
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+
 SET(SRCS 
 	main.cpp
      )
@@ -20,4 +23,4 @@ SET(HDRS
 	 	cobs.h)
 	
 
-add_executable(${cobsName} main.cpp ${SRCS})
+add_executable(${ProjectName} main.cpp ${SRCS})
