@@ -17,5 +17,5 @@ before_script:
     - cmake ..
 
 script:
--make
--cppcheck --quiet --error-exitcode=1 .  
+- make
+- cppcheck --quiet --error-exitcode=1 .  
