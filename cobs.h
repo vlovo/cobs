@@ -13,7 +13,6 @@
 
 
 
-
 namespace cobs
 {
 	typedef std::vector<uint8_t> ByteSequence;

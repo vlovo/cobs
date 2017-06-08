@@ -1,12 +1,21 @@
 language: cpp
- 
 compiler:  
     - gcc
-    - clang
+dist: trusty
+
+addons:
+  apt:
+    packages: libboost-all-dev
+
+install:
+# cppcheck
+- sudo apt-get install -qq cppcheck
 
 before_script:  
     - mkdir build
     - cd build
     - cmake ..
 
-script: make  
+script:
+-make
+-cppcheck --quiet --error-exitcode=1 .  
