@@ -3,7 +3,9 @@
 #include <iostream>
 #include "cobs.h"
  
-
+/*
+(c) M.Leitz
+*/
 
 int main(int argc, char *argv[])
 {
